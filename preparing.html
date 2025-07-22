@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preparing Your Cheat-Sheet - Objection Buster</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <header><h1>Preparing Your Cheat-Sheet</h1></header>
+  <div id="navbar"></div>
+  <main class="container" id="prepMain">
+    <div id="loader" style="text-align:center;">
+      <div class="spinner-border text-success" style="width:3rem;height:3rem;"></div>
+      <p>Your cheat-sheet is being generated...</p>
+    </div>
+    <div id="pdfSection" style="display:none;">
+      <div class="pdf-placeholder" style="border:2px dashed #1db954;padding:2rem;text-align:center;margin-bottom:1rem;">
+        <span style="font-size:1.2em;">[Locked PDF Preview]</span><br>
+        <button disabled style="background:#ccc;color:#fff;padding:0.5em 1em;border-radius:4px;margin-top:1em;">Download PDF</button>
+      </div>
+      <div style="text-align:center;margin-bottom:1.5em;">
+        <strong>Choose your plan to unlock your PDF.</strong>
+      </div>
+      <a href="/plans.html"><button style="background:#1db954;color:#fff;padding:0.7em 1.5em;border:none;border-radius:4px;">Go to Plans & Pricing</button></a>
+    </div>
+  </main>
+  <div id="footer"></div>
+  <script>
+    fetch('/navbar.html').then(r=>r.text()).then(html=>document.getElementById('navbar').innerHTML=html);
+    fetch('/footer.html').then(r=>r.text()).then(html=>document.getElementById('footer').innerHTML=html);
+    // Simulate AI+PDF pipeline
+    setTimeout(() => {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('pdfSection').style.display = 'block';
+    }, 2500);
+  </script>
+</body>
+</html>

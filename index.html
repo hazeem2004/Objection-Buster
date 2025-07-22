@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Objection Buster Cheat Sheet</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <h1 id="headline"></h1>
+    <form id="paymentForm">
+      <input type="email" id="email" placeholder="test@example.com" required>
+      <textarea id="objection" placeholder="Your objection..." required></textarea>
+      <button type="submit">Purchase</button>
+    </form>
+    <div id="support" style="margin-top:1em;"></div>
+
+<script>
+  // Load public settings (headline, support email)
+  fetch('/api/admin/settings')
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.settings && data.settings.public) {
+        document.getElementById('headline').textContent = data.settings.public.headline || '';
+        document.getElementById('support').textContent = data.settings.public.supportEmail ? 'Support: ' + data.settings.public.supportEmail : '';
+      }
+    });
+  document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const objection = document.getElementById('objection').value;
+    try {
+      const response = await fetch('/api/objection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, objection })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Cheat sheet generated! PDF path: ' + data.pdfPath);
+        // Optionally, trigger payment flow here
+      } else {
+        alert('Error: ' + data.message);
+      }
+    } catch (err) {
+      alert('Server error: ' + err.message);
+    }
+  });
+</script>
+</body>
+</html>

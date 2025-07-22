@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - Objection Buster</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .card-type { height:24px;vertical-align:middle;margin-left:8px; }
+    .checkout-box { background:#fff;border-radius:10px;box-shadow:0 2px 12px #1db95422;padding:2rem;max-width:400px;margin:auto; }
+    @media (max-width: 768px) { .checkout-box { padding:1rem; } }
+  </style>
+</head>
+<body>
+  <header><h1>Checkout</h1></header>
+  <div id="navbar"></div>
+  <main class="container">
+    <div class="checkout-box">
+      <div id="planDetails"></div>
+      <form id="paymentForm" autocomplete="off">
+        <label for="card">Card Number</label>
+        <input type="text" id="card" name="card" maxlength="19" required aria-label="Card Number">
+        <img id="cardIcon" class="card-type" src="" alt="" style="display:none;">
+        <label for="exp">Expiry (MM/YY)</label>
+        <input type="text" id="exp" name="exp" maxlength="5" required aria-label="Expiry Date">
+        <label for="cvc">CVC</label>
+        <input type="text" id="cvc" name="cvc" maxlength="4" required aria-label="CVC">
+        <input type="submit" value="Pay & Download PDF">
+        <div id="paymentMsg"></div>
+      </form>
+    </div>
+  </main>
+  <div id="footer"></div>
+  <script>
+    fetch('/navbar.html').then(r=>r.text()).then(html=>document.getElementById('navbar').innerHTML=html);
+    fetch('/footer.html').then(r=>r.text()).then(html=>document.getElementById('footer').innerHTML=html);
+    // Show plan details
+    const plan = JSON.parse(localStorage.getItem('selectedPlan')||'{}');
+    document.getElementById('planDetails').innerHTML = `<h2>${plan.plan||''} Plan</h2><div style='color:#1db954;font-size:1.3em;'>$${plan.price||''}</div>`;
+    // Card type detection
+    const cardIcon = document.getElementById('cardIcon');
+    document.getElementById('card').addEventListener('input', function() {
+      const val = this.value.replace(/\s+/g,'');
+      let type = '';
+      if (/^4/.test(val)) type = 'visa';
+      else if (/^5[1-5]/.test(val)) type = 'mastercard';
+      else if (/^3[47]/.test(val)) type = 'amex';
+      else if (/^6/.test(val)) type = 'discover';
+      cardIcon.src = type ? `/img/${type}.svg` : '';
+      cardIcon.style.display = type ? 'inline' : 'none';
+      cardIcon.alt = type ? type : '';
+    });
+    // Payment form
+    document.getElementById('paymentForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const card = document.getElementById('card').value.trim();
+      const exp = document.getElementById('exp').value.trim();
+      const cvc = document.getElementById('cvc').value.trim();
+      if (!card || !exp || !cvc) {
+        document.getElementById('paymentMsg').textContent = 'All fields required.';
+        document.getElementById('paymentMsg').style.color = '#b91c1c';
+        return;
+      }
+      document.getElementById('paymentMsg').textContent = 'Processing...';
+      document.getElementById('paymentMsg').style.color = '#1db954';
+      // Send payment to backend
+      const res = await fetch('/api/payment/charge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: plan.plan, price: plan.price, card, exp, cvc, objectionId: localStorage.getItem('objectionId'), email: JSON.parse(localStorage.getItem('objectionData')||'{}').email })
+      });
+      if (res.ok) {
+        // Download PDF
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Objection-Cheat-Sheet.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        document.getElementById('paymentMsg').textContent = 'Payment successful! PDF downloaded.';
+        document.getElementById('paymentMsg').style.color = '#1db954';
+      } else {
+        const data = await res.json().catch(()=>({message:'Payment failed.'}));
+        document.getElementById('paymentMsg').textContent = data.message || 'Payment failed.';
+        document.getElementById('paymentMsg').style.color = '#b91c1c';
+      }
+    };
+  </script>
+</body>
+</html>

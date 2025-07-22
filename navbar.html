@@ -1,0 +1,49 @@
+<nav>
+  <a href="/index.html">Home</a>
+  <a href="/about.html">About</a>
+  <a href="/contact.html">Contact</a>
+  <a href="/objection.html">Objection Tool</a>
+  <a href="/payment.html">Payment</a>
+  <a href="/login.html" id="nav-login">Login</a>
+  <a href="/register.html" id="nav-register">Register</a>
+  <a href="#" id="nav-logout" style="display:none">Logout</a>
+</nav>
+<script>
+// Navbar login/logout toggle with backend session check
+async function updateNavbarAuth() {
+  try {
+    // Check session with backend (adjust endpoint as needed)
+    const res = await fetch('/api/auth/session', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.authenticated) {
+        document.getElementById('nav-login').style.display = 'none';
+        document.getElementById('nav-register').style.display = 'none';
+        document.getElementById('nav-logout').style.display = 'inline';
+      } else {
+        document.getElementById('nav-login').style.display = 'inline';
+        document.getElementById('nav-register').style.display = 'inline';
+        document.getElementById('nav-logout').style.display = 'none';
+      }
+    } else {
+      document.getElementById('nav-login').style.display = 'inline';
+      document.getElementById('nav-register').style.display = 'inline';
+      document.getElementById('nav-logout').style.display = 'none';
+    }
+  } catch {
+    document.getElementById('nav-login').style.display = 'inline';
+    document.getElementById('nav-register').style.display = 'inline';
+    document.getElementById('nav-logout').style.display = 'none';
+  }
+}
+updateNavbarAuth();
+
+document.getElementById('nav-logout').onclick = async function(e) {
+  e.preventDefault();
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch {}
+  localStorage.removeItem('authToken');
+  window.location.href = '/login.html';
+};
+</script>

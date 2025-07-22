@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Payment - Objection Buster</title>
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body { font-family: 'Inter', Arial, sans-serif; }
+    .brand-logo { max-width: 140px; margin-bottom: 1.5rem; }
+    .footer { margin-top: 3rem; padding: 1.5rem 0 0.5rem 0; border-top: 1px solid #eee; color: #888; font-size: 0.95em; text-align: center; }
+    .trust-badges img { max-width: 60px; margin: 0 8px; filter: grayscale(0.2); }
+    .form-label { font-weight: 600; }
+    .card { border-radius: 1.1rem; }
+    .btn { transition: box-shadow 0.2s, transform 0.2s; }
+    .btn:active { transform: scale(0.97); }
+    .alert { font-size: 1.05em; }
+    @media (max-width: 600px) {
+      .brand-logo { max-width: 100px; }
+      .card { padding: 0.5rem; }
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <main class="container py-5" x-data="paymentPage()">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-12">
+        <div class="card shadow animate__animated animate__fadeInUp">
+          <div class="card-body p-4">
+            <div class="text-center">
+              <img src="/img/logo.svg" alt="Objection Buster" class="brand-logo mb-2">
+            </div>
+            <h2 class="card-title mb-3 text-center">Secure Checkout</h2>
+            <div class="mb-3">
+              <label class="form-label">Your Objection</label>
+              <div class="border rounded p-2 bg-light" style="min-height:48px;">
+                <span x-text="objection"></span>
+              </div>
+            </div>
+            <form @submit.prevent="pay" x-show="!paid" class="needs-validation" novalidate>
+              <input type="hidden" x-model="id">
+              <input type="hidden" x-model="email">
+              <button type="submit" class="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2" x-bind:disabled="loading">
+                <span x-show="!loading">Pay $4.97</span>
+                <span x-show="loading"><span class="spinner-border spinner-border-sm"></span> Redirecting...</span>
+              </button>
+            </form>
+            <div class="alert alert-success mt-3 animate__animated animate__fadeIn" x-show="paid">
+              <strong>Payment initiated!</strong> You will be redirected shortly.
+            </div>
+            <div class="alert alert-danger mt-3 animate__animated animate__fadeIn" x-show="error" x-text="error"></div>
+            <div class="mt-4 text-center trust-badges">
+              <img src="/img/ssl.svg" alt="SSL Secure">
+              <img src="/img/2co.svg" alt="2Checkout">
+              <img src="/img/moneyback.svg" alt="Money Back Guarantee">
+            </div>
+            <div class="progress mt-3" style="height: 6px;">
+              <div class="progress-bar bg-success" role="progressbar" style="width: 33%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer class="footer">
+    <div>
+      &copy; 2025 Objection Buster &mdash; <a href="/privacy.html">Privacy Policy</a> &middot; <a href="/terms.html">Terms</a> &middot; <a href="mailto:support@objectionbuster.com">Contact</a>
+    </div>
+  </footer>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script>
+    function paymentPage() {
+      return {
+        id: new URLSearchParams(window.location.search).get('id'),
+        email: new URLSearchParams(window.location.search).get('email'),
+        objection: '',
+        loading: false,
+        paid: false,
+        error: '',
+        async pay() {
+          this.error = '';
+          // Client-side validation
+          if (!this.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(this.email)) {
+            this.error = 'Please enter a valid email address.';
+            return;
+          }
+          this.loading = true;
+          fetch('/api/payment/create-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: this.id, email: this.email })
+          })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success && data.checkout_url) {
+              this.paid = true;
+              setTimeout(() => { window.location.href = data.checkout_url; }, 1200);
+            } else {
+              this.error = data.message || 'Payment failed.';
+            }
+          })
+          .catch(() => { this.error = 'Network error.'; })
+          .finally(() => { this.loading = false; });
+        },
+        async init() {
+          // Optionally fetch objection text by ID for summary
+          if (this.id) {
+            fetch(`/api/objection/${this.id}`)
+              .then(r => r.json())
+              .then(data => { if (data.success) this.objection = data.objection; });
+          }
+        }
+      }
+    }
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('paymentPage', paymentPage);
+      Alpine.store('paymentPage', paymentPage());
+      Alpine.store('paymentPage').init();
+    });
+  </script>
+</body>
+</html>
